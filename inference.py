@@ -3,14 +3,16 @@ import requests
 import json
 import time
 
-# ✅ 1. ULTIMATE URL DISCOVERY
-# We check the validator's variable, then your SPECIFIC HF URL as a hard backup
+# ✅ 1. DYNAMIC URL DISCOVERY
+# We check the validator's variable first.
 API_URL = os.environ.get("API_URL")
 
-if not API_URL:
-    # Replace the URL below with your actual Hugging Face Space Public URL
+# If the validator doesn't provide it, we use your LIVE HF Space link.
+if not API_URL or API_URL == "None":
     API_URL = "https://anaghamenon-openenv-email-triage-final.hf.space"
 
+# ✅ 2. STRICT PROXY CONFIG
+# No fallbacks here! This prevents the "No API calls" error.
 LLM_BASE_URL = os.environ.get("API_BASE_URL")
 API_KEY = os.environ.get("API_KEY")
 
