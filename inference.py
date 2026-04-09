@@ -3,60 +3,53 @@ import requests
 import json
 import time
 
-# ✅ 1. SETUP DYNAMIC URLS
-API_URL = os.environ.get("API_URL", "http://127.0.0.1:8000")
+# ✅ 1. SMARTER DYNAMIC URLS
+# We check for API_URL (validator), then HF_SPACE_ID (to build the URL), then localhost
+API_URL = os.environ.get("API_URL")
+if not API_URL:
+    space_id = os.environ.get("HF_SPACE_ID") # Hugging Face automatically provides this
+    if space_id:
+        user, space = space_id.split("/")
+        API_URL = f"https://{user}-{space.replace('_', '-')}.hf.space"
+    else:
+        API_URL = "http://127.0.0.1:8000"
+
 LLM_BASE_URL = os.environ.get("API_BASE_URL", "http://127.0.0.1:4000/v1")
 API_KEY = os.environ.get("API_KEY", os.getenv("OPENAI_API_KEY", "your_local_key"))
 
-def simple_agent(obs):
-    prompt = f"Triage email. Return ONLY JSON: {{'category': '...', 'priority': '...', 'response': '...'}}. Email: {obs.get('body')}"
-
-    # ✅ 2. THE API CALL (Crucial for Phase 2)
-    try:
-        response = requests.post(
-            f"{LLM_BASE_URL}/chat/completions",
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {API_KEY}" # Uses injected key
-            },
-            json={
-                "model": "llama-3.1-8b-instant", # ✅ No 'groq/' prefix
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0
-            },
-            timeout=30
-        )
-        
-        # If this fails, the proxy won't log a call
-        response.raise_for_status()
-        data = response.json()
-        content = data.get("choices", [{}])[0].get("message", {}).get("content", "{}")
-
-        # Clean JSON markdown
-        if "```" in content:
-            content = content.split("```")[1].replace("json", "").strip()
-
-        return json.loads(content)
-
-    except Exception as e:
-        print(f"PROXY CALL FAILED: {e}")
-        # Return a valid dict so the loop continues, but the proxy log might be empty
-        return {"category": "support", "priority": "low", "response": "error"}
+# ... (keep your simple_agent function exactly as it is) ...
 
 def run():
+    print(f"[DEBUG] Connecting to API_URL: {API_URL}", flush=True)
     print("[START] task=email_triage", flush=True)
-    # Reset env
-    obs = requests.post(f"{API_URL}/reset").json()
     
+    # ✅ 2. RETRY LOOP (Fixes the Connection Refused error)
+    obs = None
+    for attempt in range(5):
+        try:
+            response = requests.post(f"{API_URL}/reset", timeout=15)
+            response.raise_for_status()
+            obs = response.json()
+            break 
+        except Exception as e:
+            print(f"[RETRY {attempt+1}/5] Server not ready yet... {e}", flush=True)
+            time.sleep(5)
+
+    if not obs:
+        print("CRITICAL: Environment server is unreachable.", flush=True)
+        return
+
     # Run the agent
     action = simple_agent(obs)
     
     # Step the env
-    res = requests.post(f"{API_URL}/step", json=action).json()
-    
-    reward = res.get("reward", 0)
-    print(f"[STEP] step=1 reward={reward}", flush=True)
-    print(f"[END] task=email_triage score={reward} steps=1", flush=True)
+    try:
+        res = requests.post(f"{API_URL}/step", json=action, timeout=15).json()
+        reward = res.get("reward", 0)
+        print(f"[STEP] step=1 reward={reward}", flush=True)
+        print(f"[END] task=email_triage score={reward} steps=1", flush=True)
+    except Exception as e:
+        print(f"FAILED TO STEP: {e}", flush=True)
 
 if __name__ == "__main__":
     run()
