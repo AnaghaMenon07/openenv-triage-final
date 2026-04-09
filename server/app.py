@@ -51,14 +51,18 @@ def step(action: Action):
         "info": info
     }
 
-# --- THE CRITICAL PART FOR THE VALIDATOR ---
+# --- THE CRITICAL FIXES FOR THE VALIDATOR ---
 
 def main():
     """
-    This is the entry point function the validator is looking for.
-    It tells uvicorn to run the 'app' object in this same file.
+    Issue Fix: server/app.py missing main() function.
+    This function is the 'Entry Point' the validator is searching for.
     """
     uvicorn.run("server.app:app", host="0.0.0.0", port=8000, reload=False)
 
 if __name__ == "__main__":
+    """
+    Issue Fix: main() function not callable (missing if __name__ == '__main__').
+    This allows the validator to run 'python server/app.py' directly.
+    """
     main()
