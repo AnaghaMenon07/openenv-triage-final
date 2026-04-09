@@ -3,8 +3,14 @@ import requests
 import json
 import time
 
-# 🛑 NO FALLBACKS. We force the code to use the Validator's variables.
+# ✅ 1. ULTIMATE URL DISCOVERY
+# We check the validator's variable, then your SPECIFIC HF URL as a hard backup
 API_URL = os.environ.get("API_URL")
+
+if not API_URL:
+    # Replace the URL below with your actual Hugging Face Space Public URL
+    API_URL = "https://anaghamenon-openenv-email-triage-final.hf.space"
+
 LLM_BASE_URL = os.environ.get("API_BASE_URL")
 API_KEY = os.environ.get("API_KEY")
 
