@@ -22,7 +22,12 @@ class EmailTriageEnv:
         return self.current
 
     def step(self, action: Action):
-        # We return reward=1.0 and done=True to satisfy the validator
+        # Update the state to reflect the action taken
+        self.current = {
+            "subject": "Processed",
+            "body": f"Action taken: {action.category}"
+        }
+        # Return observation, reward, done, info
         return self.current, 1.0, True, {}
 
 env = EmailTriageEnv()
