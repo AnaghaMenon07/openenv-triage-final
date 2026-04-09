@@ -2,9 +2,12 @@ import os
 import requests
 import json
 
-API_URL = "http://127.0.0.1:8000"
-LLM_URL = "http://127.0.0.1:4000/v1/chat/completions"
-
+# ✅ PHASE 2 FIX: Use environment variables provided by the platform
+# These variables are injected by the Scaler/Meta validator during testing.
+# If they don't exist, it falls back to your local settings for testing.
+API_URL = os.environ.get("API_URL", "http://127.0.0.1:8000")
+LLM_BASE_URL = os.environ.get("API_BASE_URL", "http://127.0.0.1:4000/v1")
+API_KEY = os.environ.get("API_KEY", os.getenv("OPENAI_API_KEY", "your_local_key"))
 
 def simple_agent(obs):
     prompt = f"""
@@ -23,14 +26,15 @@ Body: {obs.get("body", "")}
 """
 
     try:
+        # ✅ DYNAMIC LLM CALL: Routes through the official proxy
         response = requests.post(
-            LLM_URL,
+            f"{LLM_BASE_URL}/chat/completions",
             headers={
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}"
+                "Authorization": f"Bearer {API_KEY}"
             },
             json={
-                "model": "groq/llama-3.1-8b-instant",   # ✅ FIXED 
+                "model": "llama-3.1-8b-instant", 
                 "messages": [
                     {"role": "user", "content": prompt}
                 ]
@@ -39,8 +43,13 @@ Body: {obs.get("body", "")}
         )
 
         data = response.json()
-
         content = data.get("choices", [{}])[0].get("message", {}).get("content", "{}")
+
+        # Clean markdown backticks if the LLM includes them
+        if "```json" in content:
+            content = content.split("```json")[1].split("```")[0].strip()
+        elif "```" in content:
+            content = content.split("```")[1].split("```")[0].strip()
 
         parsed = json.loads(content)
 
@@ -52,7 +61,6 @@ Body: {obs.get("body", "")}
 
     except Exception as e:
         print("LLM ERROR:", e)
-
         return {
             "category": "internal",
             "priority": "low",
@@ -83,6 +91,7 @@ def run():
 
     obs = safe_post(f"{API_URL}/reset")
     if obs is None:
+        print("Could not reset environment. Check if server is running.")
         return
 
     done = False
@@ -92,7 +101,7 @@ def run():
         res = safe_post(f"{API_URL}/step", action)
 
         if res is None:
-            return
+            break
 
         reward = round(res.get("reward", 0), 2)
         total_score += reward
