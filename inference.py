@@ -3,15 +3,19 @@ import requests
 import json
 import time
 
-# ✅ 1. MATCHING THE CHECKLIST EXACTLY
+# 1. URL Discovery
 API_URL = os.environ.get("API_URL")
 if not API_URL or API_URL == "None":
     API_URL = "https://anaghamenon-openenv-email-triage-final.hf.space"
 
-# These must match their naming convention exactly
-API_BASE_URL = os.getenv("API_BASE_URL", "https://api.groq.com/openai/v1")
-MODEL_NAME = os.getenv("MODEL_NAME", "llama-3.1-8b-instant")
-API_KEY = os.getenv("API_KEY") # This is your token/key
+# 2. Universal Proxy Config (Tries both common names)
+API_BASE_URL = os.environ.get("API_BASE_URL") or os.environ.get("OPENAI_BASE_URL")
+API_KEY = os.environ.get("API_KEY") or os.environ.get("OPENAI_API_KEY")
+MODEL_NAME = os.environ.get("MODEL_NAME", "llama-3.1-8b-instant")
+
+# 3. Validation - If they give us nothing, we HAVE to fallback to a working default
+if not API_BASE_URL:
+    API_BASE_URL = "https://api.groq.com/openai/v1"
 
 def simple_agent(obs):
     prompt = f"Triage email. Return ONLY JSON: {{'category': '...', 'priority': '...', 'response': '...'}}. Email: {obs.get('body')}"
@@ -24,7 +28,7 @@ def simple_agent(obs):
                 "Authorization": f"Bearer {API_KEY}"
             },
             json={
-                "model": MODEL_NAME,
+                "model": "gpt-4o-mini",
                 "messages": [{"role": "user", "content": prompt}],
                 "temperature": 0
             },
