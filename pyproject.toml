@@ -2,15 +2,19 @@
 name = "email-triage-env"
 version = "0.1.0"
 description = "OpenEnv Email Triage Environment"
-authors = ["AnaghaMenon"]
+authors = [{name = "AnaghaMenon"}]
 dependencies = [
     "fastapi",
     "uvicorn",
+    "pydantic",
+    "requests",
     "openenv>=0.1.0"
 ]
 
 [project.scripts]
+# This is what the 'openenv validate' check looks for
 server = "server.app:main"
 
 [tool.openenv]
-env = "env.environment:EmailTriageEnv"
+# This points the OpenEnv tool to your Class inside server/app.py
+env = "server.app:EmailTriageEnv"
