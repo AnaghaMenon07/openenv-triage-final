@@ -30,7 +30,7 @@ Body: {obs.get("body", "")}
                 "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}"
             },
             json={
-                "model": "gpt-4o-mini",   # ✅ FIXED 
+                "model": "groq/llama-3.1-8b-instant",   # ✅ FIXED 
                 "messages": [
                     {"role": "user", "content": prompt}
                 ]
