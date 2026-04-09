@@ -1,7 +1,7 @@
 name: email-triage-env
 description: Context-aware email triage environment with classification, prioritization, and response generation
 
-entry_point: app:app
+entry_point: server.app:app
 
 tasks:
   - name: easy
