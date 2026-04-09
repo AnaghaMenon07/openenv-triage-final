@@ -6,11 +6,11 @@ authors = ["AnaghaMenon"]
 dependencies = [
     "fastapi",
     "uvicorn",
-    "openenv>=0.2.0"
+    "openenv>=0.1.0"
 ]
 
 [project.scripts]
-server = "server.app:main"
+server = "server.app:app"
 
 [tool.openenv]
 env = "env.environment:EmailTriageEnv"
