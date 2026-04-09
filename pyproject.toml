@@ -1,0 +1,16 @@
+[project]
+name = "email-triage-env"
+version = "0.1.0"
+description = "OpenEnv Email Triage Environment"
+authors = ["AnaghaMenon"]
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "openenv>=0.2.0"
+]
+
+[project.scripts]
+server = "server.app:main"
+
+[tool.openenv]
+env = "env.environment:EmailTriageEnv"

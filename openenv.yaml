@@ -1,0 +1,50 @@
+name: email-triage-env
+description: Context-aware email triage environment with classification, prioritization, and response generation
+
+entry_point: app:app
+
+tasks:
+  - name: easy
+    description: Classify email into category
+    grader:
+      type: llm
+      criteria: "The agent successfully and accurately categorized the email."
+
+  - name: medium
+    description: Classify email and assign priority
+    grader:
+      type: llm
+      criteria: "The agent accurately categorized the email and assigned the correct priority level."
+
+  - name: hard
+    description: Full triage including response generation
+    grader:
+      type: llm
+      criteria: "The agent categorized, prioritized, and wrote a highly professional and relevant response to the email."
+
+observation_space:
+  type: object
+  properties:
+    email_id:
+      type: string
+    subject:
+      type: string
+    body:
+      type: string
+    history:
+      type: string
+
+action_space:
+  type: object
+  properties:
+    category:
+      type: string
+    priority:
+      type: string
+    response:
+      type: string
+
+reward:
+  type: float
+  min: 0.0
+  max: 1.0
