@@ -135,11 +135,16 @@ def step_endpoint(action: FullActionRequest):
     next_obs, reward, done, info = env.step(full_action)
 
     return {
-        "observation": next_obs,
-        "reward": reward,
-        "done": done,
-        "info": info
+    "observation": next_obs,
+    "reward": reward,
+    "done": done,
+    "info": info,
+    "action": {
+        "category": full_action.category,
+        "priority": full_action.priority,
+        "response": full_action.response
     }
+}
 
 def main():
     port = int(os.environ.get("PORT", 7860))
