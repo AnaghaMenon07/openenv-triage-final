@@ -4,33 +4,30 @@ version: "0.1.0"
 description: "Context-aware email triage environment with classification, prioritization, and response generation"
 entry_point: "server.app:app"
 
-# -- Metadata for Discovery --
 server:
   dockerfile: Dockerfile
   port: 7860
   local_image_name: email-triage-env-img
 
-# ── Task Definitions (Matched with your Grader files) ───────────────git add .──────────
 tasks:
   - name: customer_support_triage
     description: "Classify and triage customer support emails"
-    grader: grade/customer_support_triage
+    grader: grade/customer_support_triage.py
     max_steps: 1
     criteria: "The agent should correctly identify the user's intent (e.g., refund, billing inquiry, technical support) and categorize it accordingly."
 
   - name: spam_classification
     description: "Classify email as spam or not spam"
-    grader: grade/spam_classification
+    grader: grade/spam_classification.py
     max_steps: 1
     criteria: "The agent must accurately distinguish between legitimate correspondence and unsolicited spam or phishing attempts."
 
   - name: urgency_detection
     description: "Detect urgency level and generate response"
-    grader: grade/urgency_detection
+    grader: grade/urgency_detection.py
     max_steps: 1
     criteria: "The agent must identify critical system-wide issues and generate a professional, high-priority response to the user."
 
-# ── Action Space Schema ───────────────────────────────────────────────────────
 action_space:
   type: object
   properties:
