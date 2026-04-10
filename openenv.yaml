@@ -4,26 +4,23 @@ description: Context-aware email triage environment with classification, priorit
 entry_point: server.app:app
 
 tasks:
-  - name: easy
-    description: Classify email into category
-    max_steps: 1
+  - name: customer_support_triage
+    description: Classify and triage customer support emails
     grader:
       type: llm
-      criteria: "The agent successfully and accurately categorized the email into a valid category."
+      criteria: "The agent successfully triaged the customer support email."
 
-  - name: medium
-    description: Classify email and assign priority
-    max_steps: 1
+  - name: spam_classification
+    description: Classify email as spam or not spam
     grader:
       type: llm
-      criteria: "The agent accurately categorized the email and assigned the correct priority level (low, medium, or high)."
+      criteria: "The agent correctly classified the email as spam or legitimate."
 
-  - name: hard
-    description: Full triage including response generation
-    max_steps: 1
+  - name: urgency_detection
+    description: Detect urgency level and generate response
     grader:
       type: llm
-      criteria: "The agent categorized, prioritized, and wrote a highly professional and relevant response to the email."
+      criteria: "The agent detected urgency and wrote a professional response."
 
 observation_space:
   type: object
