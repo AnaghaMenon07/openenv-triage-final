@@ -64,4 +64,4 @@ class EmailTriageEnv:
             score += 0.15  # partial credit for short response
 
         # Clamp between 0.0 and 1.0
-        return round(min(max(score, 0.0), 1.0), 2)
+        return round(min(max(score, 0.0), 0.95), 2)
