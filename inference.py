@@ -6,6 +6,12 @@ import requests
 from typing import List, Optional
 from openai import OpenAI
 
+try:
+    from openai import OpenAI
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "openai"])
+    from openai import OpenAI
+
 # 1. Environment Variable Discovery (Strictly matching latest checklist requirements)
 # Defaults are set ONLY for API_BASE_URL and MODEL_NAME.
 # HF_TOKEN and LOCAL_IMAGE_NAME must not have defaults.
