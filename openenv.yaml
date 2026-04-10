@@ -29,7 +29,7 @@ observation_space:
 action_space:
   type: object
   properties:
-    category:
+    action:
       type: string
     priority:
       type: string

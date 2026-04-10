@@ -18,11 +18,16 @@ app.add_middleware(
 
 # --- Action Models for Tiered Validation ---
 class EasyAction(BaseModel):
-    category: str
+    action: str
 
 class MediumAction(BaseModel):
-    category: str
+    action: str
     priority: str
+
+class FullActionRequest(BaseModel):
+    action: str
+    priority: str
+    response: str
 
 # --- Initialize env ---
 env = EmailTriageEnv()
@@ -48,7 +53,7 @@ def schema():
         "action": {
             "type": "object",
             "properties": {
-                "category": {"type": "string"},
+                "action": {"type": "string"},
                 "priority": {"type": "string"},
                 "response": {"type": "string"}
             }
@@ -93,27 +98,48 @@ def state_endpoint():
 @app.post("/step/customer_support_triage")
 def step_customer_support(action: EasyAction):
     # Convert partial EasyAction to full Action object
-    full_action = Action(category=action.category, priority="low", response="")
+    full_action = Action(category=action.action, priority="low", response="")
     next_obs, reward, done, info = env.step(full_action)
     return {"observation": next_obs, "reward": reward, "done": done, "info": info}
 
 @app.post("/step/spam_classification")
 def step_spam(action: MediumAction):
     # Convert partial MediumAction to full Action object
-    full_action = Action(category=action.category, priority=action.priority, response="")
+    full_action = Action(category=action.action, priority=action.priority, response="")
     next_obs, reward, done, info = env.step(full_action)
     return {"observation": next_obs, "reward": reward, "done": done, "info": info}
 
 @app.post("/step/urgency_detection")
-def step_urgency(action: Action):
+def step_urgency(action: FullActionRequest):
+    full_action = Action(
+        category=action.action,
+        priority=action.priority,
+        response=action.response
+    )
+
+    next_obs, reward, done, info = env.step(full_action)
+
+    return {"observation": next_obs, "reward": reward, "done": done, "info": info}
     # Already receives the full Action object
     next_obs, reward, done, info = env.step(action)
     return {"observation": next_obs, "reward": reward, "done": done, "info": info}
 
 @app.post("/step")
-def step_endpoint(action: Action):
-    next_obs, reward, done, info = env.step(action)
-    return {"observation": next_obs, "reward": reward, "done": done, "info": info}
+def step_endpoint(action: FullActionRequest):
+    full_action = Action(
+        category=action.action,
+        priority=action.priority,
+        response=action.response
+    )
+
+    next_obs, reward, done, info = env.step(full_action)
+
+    return {
+        "observation": next_obs,
+        "reward": reward,
+        "done": done,
+        "info": info
+    }
 
 def main():
     port = int(os.environ.get("PORT", 7860))
