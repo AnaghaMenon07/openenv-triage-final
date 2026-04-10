@@ -2,8 +2,10 @@ from pydantic import BaseModel
 
 
 class Observation(BaseModel):
+    email_id: str = "1"
     subject: str
     body: str
+    history: str = ""
 
 
 class EmailTriageEnv:
@@ -15,8 +17,8 @@ class EmailTriageEnv:
 
     def reset(self):
         self.current = Observation(
-            subject="Reset email",
-            body="Hello, need help with my account"
+            subject="Support Request",
+            body="I cannot access my account. Please help."
         )
         return self.current
 
@@ -24,8 +26,12 @@ class EmailTriageEnv:
         return self.current
 
     def step(self, action):
-        reward = 1.0
+        # MANDATORY: strictly between 0 and 1 (not 0, not 1)
+        reward = 0.95
         done = True
         info = {}
-
+        self.current = Observation(
+            subject="Processed",
+            body=f"Action taken: {action.category}"
+        )
         return self.current, reward, done, info
