@@ -4,10 +4,12 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+# Importing from your project structure
 from env.environment import EmailTriageEnv, Action
 
 app = FastAPI(version="0.1.0")
 
+# Enable CORS for Hugging Face space compatibility
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -15,18 +17,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Action Models matching action_space in openenv.yaml ---
-class EasyAction(BaseModel):
+# --- Request Models ---
+class ActionRequest(BaseModel):
     category: str
+    priority: str = "low"
+    response: str = ""
 
-class MediumAction(BaseModel):
-    category: str
-    priority: str
-
-# --- Initialize env ---
+# --- Initialize environment ---
 env = EmailTriageEnv()
-
-# --- Required OpenEnv Discovery Endpoints ---
 
 @app.get("/health")
 def health():
@@ -34,9 +32,10 @@ def health():
 
 @app.get("/metadata")
 def metadata():
+    # MANDATORY: These names must match your openenv.yaml tasks EXACTLY
     return {
         "name": "email-triage-env",
-        "description": "Context-aware email triage environment with classification, prioritization, and response generation",
+        "description": "Context-aware email triage environment",
         "version": "0.1.0",
         "tasks": ["customer_support_triage", "spam_classification", "urgency_detection"]
     }
@@ -57,72 +56,42 @@ def schema():
             "properties": {
                 "email_id": {"type": "string"},
                 "subject": {"type": "string"},
-                "body": {"type": "string"},
-                "history": {"type": "string"}
-            }
-        },
-        "state": {
-            "type": "object",
-            "properties": {
-                "email_id": {"type": "string"},
-                "subject": {"type": "string"},
-                "body": {"type": "string"},
-                "history": {"type": "string"}
+                "body": {"type": "string"}
             }
         }
     }
-
-@app.post("/mcp")
-async def mcp(request: Request):
-    body = await request.json()
-    return {
-        "jsonrpc": "2.0",
-        "id": body.get("id", 1),
-        "result": {
-            "name": "email-triage-env",
-            "description": "Email triage environment MCP endpoint"
-        }
-    }
-
-@app.get("/")
-def root():
-    return {"message": "Email triage env running"}
 
 @app.post("/reset")
 def reset_endpoint():
     return env.reset()
 
-@app.get("/state")
-def state_endpoint():
-    return env.state()
-
-# --- Task Specific Step Endpoints ---
-
+# --- Task-Specific Step Endpoints ---
 @app.post("/step/customer_support_triage")
-def step_customer_support(action: EasyAction):
-    full_action = Action(category=action.category, priority="low", response="")
-    next_obs, reward, done, info = env.step(full_action)
-    return {"observation": next_obs, "reward": reward, "done": done, "info": info}
-
 @app.post("/step/spam_classification")
-def step_spam(action: MediumAction):
-    full_action = Action(category=action.category, priority=action.priority, response="")
-    next_obs, reward, done, info = env.step(full_action)
-    return {"observation": next_obs, "reward": reward, "done": done, "info": info}
-
 @app.post("/step/urgency_detection")
-def step_urgency(action: Action):
-    next_obs, reward, done, info = env.step(action)
-    return {"observation": next_obs, "reward": reward, "done": done, "info": info}
-
 @app.post("/step")
-def step_endpoint(action: Action):
-    next_obs, reward, done, info = env.step(action)
-    return {"observation": next_obs, "reward": reward, "done": done, "info": info}
+async def step_endpoint(req: ActionRequest):
+    # Convert Pydantic request to the 'Action' object your environment expects
+    full_action = Action(
+        category=req.category,
+        priority=req.priority,
+        response=req.response
+    )
+    
+    # Run the step in your environment
+    next_obs, reward, done, info = env.step(full_action)
+    
+    return {
+        "observation": next_obs,
+        "reward": reward,
+        "done": done,
+        "info": info
+    }
 
 def main():
+    # Hugging Face Spaces always use port 7860
     port = int(os.environ.get("PORT", 7860))
-    uvicorn.run("server.app:app", host="0.0.0.0", port=port, reload=False)
+    uvicorn.run(app, host="0.0.0.0", port=port)
 
 if __name__ == "__main__":
     main()

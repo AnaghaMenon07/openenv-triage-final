@@ -1,7 +1,7 @@
 [project]
 name = "email-triage-env"
 version = "0.1.0"
-description = "OpenEnv Email Triage Environment"
+description = "Context-aware email triage environment with classification, prioritization, and response generation"
 authors = [{name = "AnaghaMenon"}]
 dependencies = [
     "fastapi",
@@ -9,12 +9,20 @@ dependencies = [
     "pydantic",
     "requests",
     "openai",
-    "openenv-core>=0.2.0"
+    "openenv-core>=0.2.0",
+    "pyyaml"
 ]
 
 [project.scripts]
+# This allows 'server' to be run as a command during local development
 server = "server.app:main"
 
 [tool.openenv]
+# CRITICAL: These fields are read by the automated validator to discover your app
 entry_point = "server.app:app"
-env_class = "env.environment:EmailTriageEnv"
+name = "email-triage-env"
+description = "Context-aware email triage environment"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
