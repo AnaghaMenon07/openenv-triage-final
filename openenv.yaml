@@ -25,11 +25,13 @@ observation_space:
       type: string
     body:
       type: string
+    history:
+      type: string
 
 action_space:
   type: object
   properties:
-    action:
+    category:
       type: string
     priority:
       type: string
