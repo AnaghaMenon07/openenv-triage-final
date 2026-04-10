@@ -6,18 +6,21 @@ entry_point: server.app:app
 tasks:
   - name: easy
     description: Classify email into category
+    max_steps: 1
     grader:
       type: llm
-      criteria: "The agent successfully and accurately categorized the email."
+      criteria: "The agent successfully and accurately categorized the email into a valid category."
 
   - name: medium
     description: Classify email and assign priority
+    max_steps: 1
     grader:
       type: llm
-      criteria: "The agent accurately categorized the email and assigned the correct priority level."
+      criteria: "The agent accurately categorized the email and assigned the correct priority level (low, medium, or high)."
 
   - name: hard
     description: Full triage including response generation
+    max_steps: 1
     grader:
       type: llm
       criteria: "The agent categorized, prioritized, and wrote a highly professional and relevant response to the email."
