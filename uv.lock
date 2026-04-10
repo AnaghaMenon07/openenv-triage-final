@@ -544,12 +544,13 @@ wheels = [
 [[package]]
 name = "email-triage-env"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
     { name = "openai" },
     { name = "openenv-core" },
     { name = "pydantic" },
+    { name = "pyyaml" },
     { name = "requests" },
     { name = "uvicorn" },
 ]
@@ -560,6 +561,7 @@ requires-dist = [
     { name = "openai" },
     { name = "openenv-core", specifier = ">=0.2.0" },
     { name = "pydantic" },
+    { name = "pyyaml" },
     { name = "requests" },
     { name = "uvicorn" },
 ]
