@@ -4,3 +4,4 @@ pydantic
 requests
 openenv-core
 openai
+python-multipart

@@ -9,14 +9,12 @@ dependencies = [
     "pydantic",
     "requests",
     "openai",
-    "openenv>=0.1.0"
+    "openenv-core>=0.2.0"
 ]
 
 [project.scripts]
-# Correctly points to the main function in server/app.py
 server = "server.app:main"
 
 [tool.openenv]
-# Points to the app instance for the web server and the env class for logic
 entry_point = "server.app:app"
 env_class = "env.environment:EmailTriageEnv"

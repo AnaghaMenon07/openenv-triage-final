@@ -8,10 +8,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 # Copy dependency files
 COPY pyproject.toml uv.lock ./
 
-# Install dependencies
-RUN uv pip install --system --no-cache -r pyproject.toml
-
-# Also install from requirements.txt to be safe
+# Install dependencies from requirements.txt (more reliable)
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
