@@ -25,11 +25,7 @@ env = EmailTriageEnv()
 
 @app.get("/")
 def root():
-    return {
-        "status": "online",
-        "message": "Email Triage Environment is running!",
-        "endpoints": ["/health", "/metadata", "/schema", "/reset", "/step"]
-    }
+    return {"status": "online", "message": "Ready"}
 
 @app.get("/health")
 def health():
@@ -40,28 +36,16 @@ def metadata():
     return {
         "name": "email-triage-env",
         "description": "Context-aware email triage environment",
+        "version": "0.1.0",
         "tasks": ["customer_support_triage", "spam_classification", "urgency_detection"]
     }
 
 @app.get("/schema")
 def schema():
     return {
-        "action": {
-            "type": "object", 
-            "properties": {
-                "category": {"type": "string"},
-                "priority": {"type": "string"},
-                "response": {"type": "string"}
-            }
-        },
-        "observation": {
-            "type": "object",
-            "properties": {
-                "email_id": {"type": "string"},
-                "subject": {"type": "string"},
-                "body": {"type": "string"}
-            }
-        }
+        "action": {"type": "object", "properties": {"category": {"type": "string"}}},
+        "observation": {"type": "object", "properties": {"subject": {"type": "string"}}},
+        "state": {"type": "object", "properties": {"subject": {"type": "string"}}}
     }
 
 @app.post("/reset")
@@ -73,14 +57,14 @@ def reset_endpoint():
 @app.post("/step/urgency_detection")
 @app.post("/step")
 async def step_endpoint(req: ActionRequest):
-    full_action = Action(
-        category=req.category,
-        priority=req.priority,
-        response=req.response
-    )
+    full_action = Action(category=req.category, priority=req.priority, response=req.response)
     next_obs, reward, done, info = env.step(full_action)
     return {"observation": next_obs, "reward": reward, "done": done, "info": info}
 
-if __name__ == "__main__":
+# --- THIS IS THE PART YOU WERE MISSING ---
+def main():
     port = int(os.environ.get("PORT", 7860))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+if __name__ == "__main__":
+    main()
