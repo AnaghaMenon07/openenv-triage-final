@@ -4,6 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+# Ensure these imports match your folder structure exactly
 from env.environment import EmailTriageEnv, Action
 from env.models import Action as ModelAction
 
@@ -39,7 +40,8 @@ def metadata():
         "name": "email-triage-env",
         "description": "Context-aware email triage environment with classification, prioritization, and response generation",
         "version": "0.1.0",
-        "tasks": ["easy", "medium", "hard"]
+        # SYNCED: Matches your new TASKS list
+        "tasks": ["customer_support_triage", "spam_classification", "urgency_detection"]
     }
 
 @app.get("/schema")
@@ -85,7 +87,7 @@ async def mcp(request: Request):
         }
     }
 
-# --- Existing endpoints ---
+# --- Task Specific Step Endpoints (Updated Names) ---
 
 @app.get("/")
 def root():
@@ -99,20 +101,20 @@ def reset_endpoint():
 def state_endpoint():
     return env.state()
 
-@app.post("/step/easy")
-def step_easy(action: EasyAction):
+@app.post("/step/customer_support_triage")
+def step_customer_support(action: EasyAction):
     full_action = Action(category=action.category, priority="", response="")
     next_obs, reward, done, info = env.step(full_action)
     return {"observation": next_obs, "reward": reward, "done": done, "info": info}
 
-@app.post("/step/medium")
-def step_medium(action: MediumAction):
+@app.post("/step/spam_classification")
+def step_spam(action: MediumAction):
     full_action = Action(category=action.category, priority=action.priority, response="")
     next_obs, reward, done, info = env.step(full_action)
     return {"observation": next_obs, "reward": reward, "done": done, "info": info}
 
-@app.post("/step/hard")
-def step_hard(action: Action):
+@app.post("/step/urgency_detection")
+def step_urgency(action: Action):
     next_obs, reward, done, info = env.step(action)
     return {"observation": next_obs, "reward": reward, "done": done, "info": info}
 
