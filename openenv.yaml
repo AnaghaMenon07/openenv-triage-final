@@ -6,21 +6,15 @@ entry_point: server.app:app
 tasks:
   - name: customer_support_triage
     description: Classify and triage customer support emails
-    grader:
-      type: llm
-      criteria: "The agent successfully triaged the customer support email."
+    grader: grade/customer_support_triage
 
   - name: spam_classification
     description: Classify email as spam or not spam
-    grader:
-      type: llm
-      criteria: "The agent correctly classified the email as spam or legitimate."
+    grader: grade/spam_classification
 
   - name: urgency_detection
     description: Detect urgency level and generate response
-    grader:
-      type: llm
-      criteria: "The agent detected urgency and wrote a professional response."
+    grader: grade/urgency_detection
 
 observation_space:
   type: object
@@ -30,8 +24,6 @@ observation_space:
     subject:
       type: string
     body:
-      type: string
-    history:
       type: string
 
 action_space:
