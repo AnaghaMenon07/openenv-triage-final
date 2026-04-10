@@ -2,11 +2,11 @@ import os
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-# Import from env/ folder — single source of truth
-from env.environment import EmailTriageEnv
-from env.models import Action
 from pydantic import BaseModel
+
+# Import from env/ folder
+from env.environment import EmailTriageEnv, Action
+from env.models import Action as ModelAction
 
 app = FastAPI()
 
@@ -17,7 +17,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Additional models for easy/medium tasks ---
+# --- Action Models for each task level ---
 class EasyAction(BaseModel):
     category: str
 
@@ -40,21 +40,21 @@ def reset_endpoint():
 def state_endpoint():
     return env.state()
 
-# Easy task — category only
+# Easy task — category only (partial reward)
 @app.post("/step/easy")
 def step_easy(action: EasyAction):
-    full_action = Action(category=action.category, priority="low", response="N/A")
+    full_action = Action(category=action.category, priority="", response="")
     next_obs, reward, done, info = env.step(full_action)
     return {"observation": next_obs, "reward": reward, "done": done, "info": info}
 
-# Medium task — category + priority
+# Medium task — category + priority (more reward)
 @app.post("/step/medium")
 def step_medium(action: MediumAction):
-    full_action = Action(category=action.category, priority=action.priority, response="N/A")
+    full_action = Action(category=action.category, priority=action.priority, response="")
     next_obs, reward, done, info = env.step(full_action)
     return {"observation": next_obs, "reward": reward, "done": done, "info": info}
 
-# Hard task — full action
+# Hard task — full action (full reward)
 @app.post("/step/hard")
 def step_hard(action: Action):
     next_obs, reward, done, info = env.step(action)
