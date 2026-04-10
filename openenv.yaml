@@ -10,11 +10,11 @@ tasks:
 
   - name: spam_classification
     description: Classify email as spam or not spam
-    grader: grade/task_easy
+    grader: grade/task_medium
 
   - name: urgency_detection
     description: Detect urgency level and generate response
-    grader: grade/task_easy
+    grader: grade/task_hard
 
 observation_space:
   type: object
