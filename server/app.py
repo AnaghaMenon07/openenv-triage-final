@@ -4,9 +4,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-# Ensure these imports match your folder structure exactly
+# Importing directly from your updated environment.py
 from env.environment import EmailTriageEnv, Action
-from env.models import Action as ModelAction
 
 app = FastAPI(version="0.1.0")
 
@@ -17,7 +16,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Action Models ---
+# --- Action Models for Tiered Validation ---
 class EasyAction(BaseModel):
     category: str
 
@@ -28,7 +27,7 @@ class MediumAction(BaseModel):
 # --- Initialize env ---
 env = EmailTriageEnv()
 
-# --- Required OpenEnv endpoints ---
+# --- Required OpenEnv Discovery Endpoints ---
 
 @app.get("/health")
 def health():
@@ -40,7 +39,6 @@ def metadata():
         "name": "email-triage-env",
         "description": "Context-aware email triage environment with classification, prioritization, and response generation",
         "version": "0.1.0",
-        # SYNCED: Matches your new TASKS list
         "tasks": ["customer_support_triage", "spam_classification", "urgency_detection"]
     }
 
@@ -63,15 +61,6 @@ def schema():
                 "body": {"type": "string"},
                 "history": {"type": "string"}
             }
-        },
-        "state": {
-            "type": "object",
-            "properties": {
-                "email_id": {"type": "string"},
-                "subject": {"type": "string"},
-                "body": {"type": "string"},
-                "history": {"type": "string"}
-            }
         }
     }
 
@@ -87,7 +76,7 @@ async def mcp(request: Request):
         }
     }
 
-# --- Task Specific Step Endpoints (Updated Names) ---
+# --- Task Specific Step Endpoints ---
 
 @app.get("/")
 def root():
@@ -103,18 +92,21 @@ def state_endpoint():
 
 @app.post("/step/customer_support_triage")
 def step_customer_support(action: EasyAction):
-    full_action = Action(category=action.category, priority="", response="")
+    # Convert partial EasyAction to full Action object
+    full_action = Action(category=action.category, priority="low", response="")
     next_obs, reward, done, info = env.step(full_action)
     return {"observation": next_obs, "reward": reward, "done": done, "info": info}
 
 @app.post("/step/spam_classification")
 def step_spam(action: MediumAction):
+    # Convert partial MediumAction to full Action object
     full_action = Action(category=action.category, priority=action.priority, response="")
     next_obs, reward, done, info = env.step(full_action)
     return {"observation": next_obs, "reward": reward, "done": done, "info": info}
 
 @app.post("/step/urgency_detection")
 def step_urgency(action: Action):
+    # Already receives the full Action object
     next_obs, reward, done, info = env.step(action)
     return {"observation": next_obs, "reward": reward, "done": done, "info": info}
 
