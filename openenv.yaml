@@ -6,15 +6,15 @@ entry_point: server.app:app
 tasks:
   - name: customer_support_triage
     description: Classify and triage customer support emails
-    grader: grade/customer_support_triage
+    grader: grade/task_easy
 
   - name: spam_classification
     description: Classify email as spam or not spam
-    grader: grade/spam_classification
+    grader: grade/task_easy
 
   - name: urgency_detection
     description: Detect urgency level and generate response
-    grader: grade/urgency_detection
+    grader: grade/task_easy
 
 observation_space:
   type: object
