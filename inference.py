@@ -1,6 +1,5 @@
 import os
 import sys
-import time
 import json
 import asyncio
 import requests
@@ -11,45 +10,46 @@ from typing import List, Optional
 try:
     import openai
 except ImportError:
+    print("Installing openai...")
     subprocess.check_call([sys.executable, "-m", "pip", "install", "openai"])
 
 from openai import OpenAI
 
 # --- Configuration ---
+# These are provided by the environment during official evaluation
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4o-mini")
 HF_TOKEN = os.getenv("HF_TOKEN")
-# Optional local image name for docker-based evaluation
+
+# Added for Docker-based local evaluation
 LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
 
-# The URL of your running Hugging Face space
+# This must be the URL of your RUNNING Hugging Face space
+# The validator will override this, but for local testing, ensure it matches your space URL
 API_URL = os.environ.get("API_URL", "https://anaghamenon-openenv-email-triage-final.hf.space")
 
-BENCHMARK = "email_triage_env"
+BENCHMARK = "email-triage-env"
 
 # Task definitions synced with openenv.yaml
 TASKS = [
     {
         "name": "customer_support_triage",
         "endpoint": "/step/customer_support_triage",
-        "prompt": "Classify this customer support email. Reply ONLY with JSON: {\"category\": \"<support|billing|inquiry>\"}",
-        "fallback": {"category": "support"}
+        "prompt": "Classify this customer support email. Reply ONLY with JSON: {\"category\": \"support|billing|inquiry\"}"
     },
     {
         "name": "spam_classification",
         "endpoint": "/step/spam_classification",
-        "prompt": "Classify this email and assign priority. Reply ONLY with JSON: {\"category\": \"<spam|legitimate>\", \"priority\": \"<low|medium|high>\"}",
-        "fallback": {"category": "legitimate", "priority": "low"}
+        "prompt": "Classify this email. Reply ONLY with JSON: {\"category\": \"spam|legitimate\", \"priority\": \"low|medium|high\"}"
     },
     {
         "name": "urgency_detection",
         "endpoint": "/step/urgency_detection",
-        "prompt": "Detect urgency and write a professional response. Reply ONLY with JSON: {\"category\": \"<value>\", \"priority\": \"<low|high>\", \"response\": \"<text>\"}",
-        "fallback": {"category": "support", "priority": "high", "response": "Acknowledged."}
+        "prompt": "Detect urgency and write a professional response. Reply ONLY with JSON: {\"category\": \"string\", \"priority\": \"low|high\", \"response\": \"string\"}"
     },
 ]
 
-# --- Structured Logging ---
+# --- Mandatory Logging Functions ---
 def log_start(task: str, env: str, model: str) -> None:
     print(f"[START] task={task} env={env} model={model}", flush=True)
 
@@ -61,54 +61,68 @@ def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> No
     rewards_str = ",".join(f"{r:.2f}" for r in rewards)
     print(f"[END] success={str(success).lower()} steps={steps} score={score:.3f} rewards={rewards_str}", flush=True)
 
-async def run():
+async def run_evaluation():
     # Initialize OpenAI client
+    # The 'no_token_provided' fallback is what triggers your 401 locally if HF_TOKEN isn't set
     client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN or "no_token_provided")
     
     all_rewards = []
-    total_steps = 0
+    total_steps_executed = 0
     
-    # Process each task level defined in openenv.yaml
-    for i, task in enumerate(TASKS, start=1):
+    for task in TASKS:
         log_start(task=task["name"], env=BENCHMARK, model=MODEL_NAME)
         
         current_reward = 0.0
-        error_msg = None
-        
         try:
-            # 1. Reset Environment
-            reset_resp = requests.post(f"{API_URL}/reset", timeout=15).json()
-            obs = reset_resp.get("observation", reset_resp)
+            # 1. Reset the environment for the new task
+            reset_resp = requests.post(f"{API_URL}/reset", timeout=15)
+            reset_data = reset_resp.json()
+            obs = reset_data.get("observation", reset_data)
 
-            # 2. LLM Reasoning
+            # 2. Get LLM reasoning for the action
             completion = client.chat.completions.create(
                 model=MODEL_NAME,
                 messages=[{
                     "role": "user", 
-                    "content": f"{task['prompt']}\n\nEmail Subject: {obs.get('subject')}\nBody: {obs.get('body')}"
+                    "content": f"{task['prompt']}\n\nSubject: {obs.get('subject')}\nBody: {obs.get('body')}"
                 }],
                 temperature=0,
                 response_format={ "type": "json_object" }
             )
             
-            action_dict = json.loads(completion.choices[0].message.content)
+            # Parse the LLM's suggested action
+            action_content = completion.choices[0].message.content
+            action_dict = json.loads(action_content)
             
-            # 3. Environment Step
-            step_resp = requests.post(f"{API_URL}{task['endpoint']}", json=action_dict, timeout=15).json()
-            current_reward = float(step_resp.get("reward", 0.0))
+            # 3. Execute the action in your environment
+            step_resp = requests.post(f"{API_URL}{task['endpoint']}", json=action_dict, timeout=15)
+            step_data = step_resp.json()
             
-            log_step(step=1, action=json.dumps(action_dict), reward=current_reward, done=True, error=None)
+            current_reward = float(step_data.get("reward", 0.0))
+            
+            log_step(
+                step=1, 
+                action=json.dumps(action_dict), 
+                reward=current_reward, 
+                done=True, 
+                error=None
+            )
             
         except Exception as e:
-            error_msg = str(e)
-            log_step(step=1, action="error", reward=0.0, done=True, error=error_msg)
+            # Log errors without crashing the entire run
+            log_step(step=1, action="error", reward=0.0, done=True, error=str(e))
         
         all_rewards.append(current_reward)
-        total_steps += 1
+        total_steps_executed += 1
 
-    # Final scoring
+    # Calculate final results
     final_score = sum(all_rewards) / len(all_rewards) if all_rewards else 0.0
-    log_end(success=final_score > 0.5, steps=total_steps, score=final_score, rewards=all_rewards)
+    log_end(
+        success=final_score >= 0.5, 
+        steps=total_steps_executed, 
+        score=final_score, 
+        rewards=all_rewards
+    )
 
 if __name__ == "__main__":
-    asyncio.run(run())
+    asyncio.run(run_evaluation())
