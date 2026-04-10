@@ -1,14 +1,13 @@
 import os
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-# Import from env/ folder
 from env.environment import EmailTriageEnv, Action
 from env.models import Action as ModelAction
 
-app = FastAPI()
+app = FastAPI(version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -17,7 +16,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Action Models for each task level ---
+# --- Action Models ---
 class EasyAction(BaseModel):
     category: str
 
@@ -25,8 +24,68 @@ class MediumAction(BaseModel):
     category: str
     priority: str
 
-# Initialize env
+# --- Initialize env ---
 env = EmailTriageEnv()
+
+# --- Required OpenEnv endpoints ---
+
+@app.get("/health")
+def health():
+    return {"status": "healthy"}
+
+@app.get("/metadata")
+def metadata():
+    return {
+        "name": "email-triage-env",
+        "description": "Context-aware email triage environment with classification, prioritization, and response generation",
+        "version": "0.1.0",
+        "tasks": ["easy", "medium", "hard"]
+    }
+
+@app.get("/schema")
+def schema():
+    return {
+        "action": {
+            "type": "object",
+            "properties": {
+                "category": {"type": "string"},
+                "priority": {"type": "string"},
+                "response": {"type": "string"}
+            }
+        },
+        "observation": {
+            "type": "object",
+            "properties": {
+                "email_id": {"type": "string"},
+                "subject": {"type": "string"},
+                "body": {"type": "string"},
+                "history": {"type": "string"}
+            }
+        },
+        "state": {
+            "type": "object",
+            "properties": {
+                "email_id": {"type": "string"},
+                "subject": {"type": "string"},
+                "body": {"type": "string"},
+                "history": {"type": "string"}
+            }
+        }
+    }
+
+@app.post("/mcp")
+async def mcp(request: Request):
+    body = await request.json()
+    return {
+        "jsonrpc": "2.0",
+        "id": body.get("id", 1),
+        "result": {
+            "name": "email-triage-env",
+            "description": "Email triage environment MCP endpoint"
+        }
+    }
+
+# --- Existing endpoints ---
 
 @app.get("/")
 def root():
@@ -40,27 +99,23 @@ def reset_endpoint():
 def state_endpoint():
     return env.state()
 
-# Easy task — category only (partial reward)
 @app.post("/step/easy")
 def step_easy(action: EasyAction):
     full_action = Action(category=action.category, priority="", response="")
     next_obs, reward, done, info = env.step(full_action)
     return {"observation": next_obs, "reward": reward, "done": done, "info": info}
 
-# Medium task — category + priority (more reward)
 @app.post("/step/medium")
 def step_medium(action: MediumAction):
     full_action = Action(category=action.category, priority=action.priority, response="")
     next_obs, reward, done, info = env.step(full_action)
     return {"observation": next_obs, "reward": reward, "done": done, "info": info}
 
-# Hard task — full action (full reward)
 @app.post("/step/hard")
 def step_hard(action: Action):
     next_obs, reward, done, info = env.step(action)
     return {"observation": next_obs, "reward": reward, "done": done, "info": info}
 
-# Generic /step fallback
 @app.post("/step")
 def step_endpoint(action: Action):
     next_obs, reward, done, info = env.step(action)
