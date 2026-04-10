@@ -10,22 +10,34 @@ server:
   local_image_name: email-triage-env-img
 
 tasks:
-  - name: customer_support_triage
+  - id: customer_support_triage
+    name: customer_support_triage
     description: "Classify and triage customer support emails"
     grader: grade/customer_support_triage.py
+    difficulty: easy
+    difficulty_score: 1
     max_steps: 1
+    expected_score: 1.0
     criteria: "The agent should correctly identify the user's intent (e.g., refund, billing inquiry, technical support) and categorize it accordingly."
 
-  - name: spam_classification
+  - id: spam_classification
+    name: spam_classification
     description: "Classify email as spam or not spam"
     grader: grade/spam_classification.py
+    difficulty: medium
+    difficulty_score: 2
     max_steps: 1
+    expected_score: 1.0
     criteria: "The agent must accurately distinguish between legitimate correspondence and unsolicited spam or phishing attempts."
 
-  - name: urgency_detection
+  - id: urgency_detection
+    name: urgency_detection
     description: "Detect urgency level and generate response"
     grader: grade/urgency_detection.py
+    difficulty: hard
+    difficulty_score: 3
     max_steps: 1
+    expected_score: 1.0
     criteria: "The agent must identify critical system-wide issues and generate a professional, high-priority response to the user."
 
 action_space:

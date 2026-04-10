@@ -116,7 +116,7 @@ async def run():
 
         all_rewards.append(reward)
         steps_taken = i
-        log_step(step=i, action=json.dumps(action_dict), reward=reward, done=True, error=current_step_error)
+        log_step(step=i, action=task["name"], reward=reward, done=True, error=current_step_error)
 
     final_score = sum(all_rewards) / len(all_rewards) if all_rewards else 0.0
     log_end(success=(final_score > 0.1), steps=steps_taken, score=final_score, rewards=all_rewards)
